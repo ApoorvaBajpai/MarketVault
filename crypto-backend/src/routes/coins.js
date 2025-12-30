@@ -1,5 +1,6 @@
 const express = require("express");
 const axios = require("axios");
+const authMiddleware = require("../../middleware/authMiddleware");
 
 const router = express.Router();
 
@@ -9,7 +10,7 @@ const CACHE_DURATION = 30 * 1000;
 
 
 /* Listing API */
-router.get("/listings", async (req, res) => {
+router.get("/api/listings", async (req, res) => {
     try {
         const response = await axios.get(
             "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest",
@@ -63,7 +64,7 @@ router.get("/info/:id", async (req, res) => {
 });
 
 /* Merged API */
-router.get("/listings-with-info", async (req, res) => {
+router.get("/listings-with-info",  authMiddleware, async (req, res) => {
     try {
         const filter = req.query.filter || "all";
         const sort = req.query.sort || "market_cap";
