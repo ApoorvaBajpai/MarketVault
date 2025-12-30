@@ -1,22 +1,21 @@
 const admin = require("../config/firebaseAdmin");
 
-const authMiddleware = async (req, res, next) => {
-    const authHeader = req.headers.authorization;
+async function authMiddleware(req, res, next) {
+  const authHeader = req.headers.authorization;
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        return res.status(401).json({ error: "Unauthorized - No token" });
-    }
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
 
-    const token = authHeader.split(" ")[1];
+  const token = authHeader.split(" ")[1];
 
-    try {
-        const decodedToken = await admin.auth().verifyIdToken(token);
-        req.user = decodedToken;
-        next();
-    } catch (error) {
-        console.error("Auth Error:", error.message);
-        return res.status(401).json({ error: "Unauthorized - Invalid token" });
-    }
-};
+  try {
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    req.user = decodedToken; // contains uid, email, etc.
+    next();
+  } catch (err) {
+    return res.status(401).json({ error: "Invalid or expired token" });
+  }
+}
 
 module.exports = authMiddleware;
