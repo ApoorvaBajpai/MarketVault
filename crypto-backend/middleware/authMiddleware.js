@@ -1,3 +1,4 @@
+const Portfolio = require("../models/Portfolio");
 const admin = require("../config/firebaseAdmin");
 
 async function authMiddleware(req, res, next) {
@@ -11,8 +12,19 @@ async function authMiddleware(req, res, next) {
 
   try {
     const decodedToken = await admin.auth().verifyIdToken(token);
-    req.user = decodedToken; // contains uid, email, etc.
-    next();
+    req.user = decodedToken;
+
+const existingPortfolio = await Portfolio.findOne({ uid: decodedToken.uid });
+
+if (!existingPortfolio) {
+  await Portfolio.create({
+    uid: decodedToken.uid,
+    holdings: [],
+  });
+}
+
+next();
+
   } catch (err) {
     return res.status(401).json({ error: "Invalid or expired token" });
   }
