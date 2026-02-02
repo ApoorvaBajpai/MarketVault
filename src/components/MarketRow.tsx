@@ -1,5 +1,7 @@
 import type { Coin } from "../types/coin";
 import { useNavigate } from "react-router-dom";
+import { buyCoin } from "../api/portfolio";
+
 
 
 type Props = {
@@ -53,9 +55,25 @@ export default function MarketRow({ coin, rank }: Props) {
       </td>
 
       <td className="px-4 py-3">
-        <button className="px-3 py-1 text-sm border rounded-lg hover:bg-gray-100">
-          Add
+        <button
+          onClick={async (e) => {
+            e.stopPropagation(); // 👈 THIS LINE
+            console.log("BUY clicked");
+            await buyCoin(
+              String(coin.id),
+              coin.symbol,
+              1,
+              coin.price
+            );
+
+            alert("Added to portfolio");
+          }}
+          className="px-3 py-1 text-sm border rounded-lg hover:bg-gray-100"
+        >
+          Buy
         </button>
+
+
       </td>
     </tr>
   );

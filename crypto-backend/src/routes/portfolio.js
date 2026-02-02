@@ -1,31 +1,39 @@
 const express = require("express");
 const router = express.Router();
 
-const authMiddleware = require("../middleware/authMiddleware");
+const authMiddleware = require("../../middleware/authMiddleware");
 const Portfolio = require("../models/Portfolio");
 
 // GET user portfolio
 router.get("/", authMiddleware, async (req, res) => {
   try {
     const portfolio = await Portfolio.findOne({ uid: req.user.uid });
+    if (!portfolio) {
+      return res.status(404).json({ message: "Portfolio not found" });
+    }
     res.json(portfolio);
   } catch (err) {
     res.status(500).json({ message: "Failed to fetch portfolio" });
   }
 });
 
-module.exports = router;
-
-// BUY coin (add to portfolio)
+// BUY coin
 router.post("/buy", authMiddleware, async (req, res) => {
   const { coinId, symbol, quantity, price } = req.body;
 
-  if (!coinId || !quantity || !price) {
+  if (!coinId || !symbol || !quantity || !price) {
     return res.status(400).json({ message: "Missing required fields" });
   }
 
   try {
+    console.log("BUY API HIT");
+    console.log("USER:", req.user);
+    console.log("BODY:", req.body);
+
     const portfolio = await Portfolio.findOne({ uid: req.user.uid });
+    if (!portfolio) {
+      return res.status(404).json({ message: "Portfolio not found" });
+    }
 
     const existingCoin = portfolio.holdings.find(
       (c) => c.coinId === coinId
@@ -52,11 +60,12 @@ router.post("/buy", authMiddleware, async (req, res) => {
     await portfolio.save();
     res.json(portfolio);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: "Failed to buy coin" });
   }
 });
 
-// SELL coin (remove from portfolio)
+// SELL coin
 router.post("/sell", authMiddleware, async (req, res) => {
   const { coinId, quantity } = req.body;
 
@@ -66,6 +75,9 @@ router.post("/sell", authMiddleware, async (req, res) => {
 
   try {
     const portfolio = await Portfolio.findOne({ uid: req.user.uid });
+    if (!portfolio) {
+      return res.status(404).json({ message: "Portfolio not found" });
+    }
 
     const existingCoin = portfolio.holdings.find(
       (c) => c.coinId === coinId
@@ -81,7 +93,6 @@ router.post("/sell", authMiddleware, async (req, res) => {
 
     existingCoin.quantity -= quantity;
 
-    // If quantity becomes 0, remove the coin entirely
     if (existingCoin.quantity === 0) {
       portfolio.holdings = portfolio.holdings.filter(
         (c) => c.coinId !== coinId
@@ -101,6 +112,9 @@ router.delete("/remove/:coinId", authMiddleware, async (req, res) => {
 
   try {
     const portfolio = await Portfolio.findOne({ uid: req.user.uid });
+    if (!portfolio) {
+      return res.status(404).json({ message: "Portfolio not found" });
+    }
 
     portfolio.holdings = portfolio.holdings.filter(
       (c) => c.coinId !== coinId
@@ -117,6 +131,10 @@ router.delete("/remove/:coinId", authMiddleware, async (req, res) => {
 router.delete("/clear", authMiddleware, async (req, res) => {
   try {
     const portfolio = await Portfolio.findOne({ uid: req.user.uid });
+    if (!portfolio) {
+      return res.status(404).json({ message: "Portfolio not found" });
+    }
+
     portfolio.holdings = [];
     await portfolio.save();
     res.json(portfolio);
@@ -124,3 +142,5 @@ router.delete("/clear", authMiddleware, async (req, res) => {
     res.status(500).json({ message: "Failed to clear portfolio" });
   }
 });
+
+module.exports = router;

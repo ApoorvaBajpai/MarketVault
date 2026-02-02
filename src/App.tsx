@@ -6,6 +6,8 @@ import { Routes, Route } from "react-router-dom";
 import CoinDetails from "./pages/CoinDetails";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { getIdToken } from "./context/AuthContext";
+import Portfolio from "./pages/Portfolio";
+
 
 
 import { useAuth } from "./context/AuthContext";
@@ -131,6 +133,16 @@ export default function App() {
           </ProtectedRoute>
         }
       />
+
+      <Route
+        path="/portfolio"
+        element={
+          
+            <Portfolio />
+          
+        }
+      />
+
 
     </Routes>
   );
