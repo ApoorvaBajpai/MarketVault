@@ -2,7 +2,7 @@ import Auth from "./pages/Auth";
 import Header from "./components/Header";
 import MarketTable from "./components/MarketTable";
 import { useEffect, useState } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useNavigate } from "react-router-dom";
 import CoinDetails from "./pages/CoinDetails";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { getIdToken } from "./context/AuthContext";
@@ -14,6 +14,7 @@ import { useAuth } from "./context/AuthContext";
 
 export default function App() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [coins, setCoins] = useState<any[]>([]);
   const [filter, setFilter] = useState<"all" | "stable" | "layer1" | "alt">("all");
   const [sort, setSort] = useState<"market_cap" | "price" | "volume_24h" | "rank">("market_cap");
@@ -92,13 +93,19 @@ export default function App() {
 
               <div className="px-8 py-4">
                 <div className="flex gap-4 mb-6">
-                  <button className="px-6 py-2 bg-indigo-600 text-white rounded-xl shadow-sm font-medium">
-                    Dashboard
+                  <button
+                    onClick={() => navigate("/")}
+                    className={`px-6 py-2 rounded-xl shadow-sm font-medium transition ${window.location.pathname === '/' ? 'bg-indigo-600 text-white' : 'bg-white border hover:bg-gray-50'}`}
+                  >
+                    Market
                   </button>
                   <button className="px-6 py-2 bg-white border rounded-xl shadow-sm font-medium hover:bg-gray-50">
                     Categories
                   </button>
-                  <button className="px-6 py-2 bg-white border rounded-xl shadow-sm font-medium hover:bg-gray-50">
+                  <button
+                    onClick={() => navigate("/portfolio")}
+                    className={`px-6 py-2 rounded-xl shadow-sm font-medium transition ${window.location.pathname === '/portfolio' ? 'bg-indigo-600 text-white' : 'bg-white border hover:bg-gray-50'}`}
+                  >
                     Portfolio
                   </button>
                 </div>
@@ -137,9 +144,9 @@ export default function App() {
       <Route
         path="/portfolio"
         element={
-          
-            <Portfolio />
-          
+
+          <Portfolio />
+
         }
       />
 
