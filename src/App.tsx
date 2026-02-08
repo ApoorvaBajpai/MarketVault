@@ -11,6 +11,8 @@ import Portfolio from "./pages/Portfolio";
 
 
 import { useAuth } from "./context/AuthContext";
+import NewsPage from "./pages/NewsPage";
+
 
 export default function App() {
   const { user } = useAuth();
@@ -72,7 +74,6 @@ export default function App() {
 
   return (
     <Routes>
-
       {/* PUBLIC AUTH PAGE */}
       <Route path="/auth" element={<Auth />} />
 
@@ -95,18 +96,24 @@ export default function App() {
                 <div className="flex gap-4 mb-6">
                   <button
                     onClick={() => navigate("/")}
-                    className={`px-6 py-2 rounded-xl shadow-sm font-medium transition ${window.location.pathname === '/' ? 'bg-indigo-600 text-white' : 'bg-white border hover:bg-gray-50'}`}
+                    className={`px-6 py-2 rounded-xl shadow-sm font-medium transition ${window.location.pathname === '/' ? 'bg-indigo-600 text-white' : 'bg-white border hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700'}`}
                   >
                     Market
                   </button>
-                  <button className="px-6 py-2 bg-white border rounded-xl shadow-sm font-medium hover:bg-gray-50">
+                  <button className="px-6 py-2 bg-white border rounded-xl shadow-sm font-medium hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700">
                     Categories
                   </button>
                   <button
                     onClick={() => navigate("/portfolio")}
-                    className={`px-6 py-2 rounded-xl shadow-sm font-medium transition ${window.location.pathname === '/portfolio' ? 'bg-indigo-600 text-white' : 'bg-white border hover:bg-gray-50'}`}
+                    className={`px-6 py-2 rounded-xl shadow-sm font-medium transition ${window.location.pathname === '/portfolio' ? 'bg-indigo-600 text-white' : 'bg-white border hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700'}`}
                   >
                     Portfolio
+                  </button>
+                  <button
+                    onClick={() => navigate("/news")}
+                    className={`px-6 py-2 rounded-xl shadow-sm font-medium transition ${window.location.pathname === '/news' ? 'bg-indigo-600 text-white' : 'bg-white border hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700'}`}
+                  >
+                    News
                   </button>
                 </div>
 
@@ -144,13 +151,16 @@ export default function App() {
       <Route
         path="/portfolio"
         element={
-
           <Portfolio />
-
         }
       />
 
-
+      <Route
+        path="/news"
+        element={
+          <NewsPage />
+        }
+      />
     </Routes>
   );
 }

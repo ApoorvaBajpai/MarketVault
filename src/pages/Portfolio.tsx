@@ -3,6 +3,9 @@ import { getPortfolio, buyCoin, sellCoin } from "../api/portfolio";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { useCurrency } from "../context/CurrencyContext";
+import { useNavigate } from "react-router-dom";
+import Header from "../components/Header"; // I noticed Header was missing in Portfolio but maybe it should be there?
+
 
 type Holding = {
   coinId: string;
@@ -19,6 +22,21 @@ export default function Portfolio() {
   const { user, loading: authLoading } = useAuth();
   const { showToast } = useToast();
   const { format } = useCurrency();
+  const navigate = useNavigate();
+
+  const [darkMode, setDarkMode] = useState(
+    localStorage.getItem("theme") === "dark"
+  );
+
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+    }
+  }, [darkMode]);
 
   // 1. Initial State from Cache (Optimistic Loading)
   const [portfolio, setPortfolio] = useState<PortfolioData | null>(() => {
@@ -134,7 +152,7 @@ export default function Portfolio() {
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Login Required</h2>
         <p className="text-gray-500 mb-8 max-w-xs text-center">Please sign in to view your portfolio and start tracking your assets.</p>
         <button
-          onClick={() => window.location.href = '/auth'}
+          onClick={() => navigate("/auth")}
           className="bg-indigo-600 text-white px-8 py-3 rounded-2xl font-semibold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition"
         >
           Go to Login
@@ -163,7 +181,7 @@ export default function Portfolio() {
         </div>
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Empty Portfolio</h2>
         <p className="text-gray-500 mb-8 max-w-xs text-center">Build your wealth by adding some assets from the crypto market.</p>
-        <button onClick={() => window.location.href = '/'} className="bg-indigo-600 text-white px-8 py-3 rounded-2xl font-semibold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition">
+        <button onClick={() => navigate("/")} className="bg-indigo-600 text-white px-8 py-3 rounded-2xl font-semibold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition">
           Explore Market
         </button>
       </div>
@@ -185,15 +203,40 @@ export default function Portfolio() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-8 text-gray-900 dark:text-white">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
+      <Header
+        darkMode={darkMode}
+        setDarkMode={setDarkMode}
+        sort="market_cap"
+        order="desc"
+        setSort={() => { }}
+        setOrder={() => { }}
+      />
+      <div className="max-w-6xl mx-auto px-4 md:px-0">
+        <div className="flex gap-4 mb-8 mt-4">
           <button
-            onClick={() => window.location.href = '/'}
-            className="flex items-center gap-2 text-indigo-600 font-medium hover:translate-x-[-4px] transition-transform"
+            onClick={() => navigate("/")}
+            className={`px-6 py-2 rounded-xl shadow-sm font-medium transition ${window.location.pathname === '/' ? 'bg-indigo-600 text-white' : 'bg-white border hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700'}`}
           >
-            ← Back to Market
+            Market
           </button>
+          <button className="px-6 py-2 bg-white border rounded-xl shadow-sm font-medium hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700">
+            Categories
+          </button>
+          <button
+            onClick={() => navigate("/portfolio")}
+            className={`px-6 py-2 rounded-xl shadow-sm font-medium transition ${window.location.pathname === '/portfolio' ? 'bg-indigo-600 text-white' : 'bg-white border hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700'}`}
+          >
+            Portfolio
+          </button>
+          <button
+            onClick={() => navigate("/news")}
+            className={`px-6 py-2 rounded-xl shadow-sm font-medium transition ${window.location.pathname === '/news' ? 'bg-indigo-600 text-white' : 'bg-white border hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700'}`}
+          >
+            News
+          </button>
+        </div>
 
+        <div className="flex justify-end items-center mb-6">
           {isStale && (
             <div className="flex items-center gap-2 px-3 py-1 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 text-xs font-bold rounded-full border border-amber-100 dark:border-amber-800 animate-pulse">
               <span className="w-2 h-2 bg-amber-400 rounded-full"></span>

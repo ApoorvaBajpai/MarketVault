@@ -9,6 +9,8 @@ import {
     AreaChart,
 } from "recharts";
 import { useCurrency, CURRENCY_SYMBOLS } from "../context/CurrencyContext";
+import NewsList from "../components/NewsList";
+
 
 function generatePriceGraph(
     currentPrice: number,
@@ -317,7 +319,7 @@ export default function CoinDetails() {
                 </div>
 
                 {/* Description */}
-                <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8 border border-gray-100 dark:border-gray-700">
+                <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8 border border-gray-100 dark:border-gray-700 mb-8">
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
                         About {coin.name}
                     </h2>
@@ -325,6 +327,8 @@ export default function CoinDetails() {
                         {coin.description}
                     </p>
                 </div>
+
+                <NewsList symbols={coin.symbol} title={`${coin.name} News`} />
             </div>
         </div>
     );
