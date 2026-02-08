@@ -1,5 +1,5 @@
-const portfolioRoutes = require("./routes/portfolio");
 require("dotenv").config();
+const portfolioRoutes = require("./routes/portfolio");
 const connectDB = require("../config/db");
 
 const express = require("express");
