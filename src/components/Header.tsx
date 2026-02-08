@@ -9,6 +9,8 @@ type Props = {
 
 
 
+import { useCurrency } from "../context/CurrencyContext";
+
 export default function Header({
   darkMode,
   setDarkMode,
@@ -17,11 +19,10 @@ export default function Header({
   setSort,
   setOrder,
 }: Props) {
+  const { currency, setCurrency } = useCurrency();
 
   return (
     <header className="w-full bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shadow-sm">
-
-      {/* Top Title Bar */}
       <div className="flex items-center gap-6 px-8 pt-6 pb-3">
         <div className="w-10 h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-lg">
           B
@@ -32,10 +33,7 @@ export default function Header({
         </div>
       </div>
 
-      {/* Search & Controls */}
       <div className="flex items-center justify-between px-8 pb-6">
-
-        {/* Search */}
         <input
           type="text"
           placeholder="Search coin or symbol"
@@ -47,17 +45,19 @@ export default function Header({
         />
 
         <div className="flex items-center gap-3">
-
-          {/* Currency Selector */}
           <select
+            value={currency}
+            onChange={(e) => setCurrency(e.target.value as any)}
             className="px-3 py-2 rounded-xl border shadow-sm
                        bg-white dark:bg-gray-800
                        border-gray-300 dark:border-gray-700
-                       text-gray-900 dark:text-white"
+                       text-gray-900 dark:text-white
+                       focus:ring-2 focus:ring-indigo-500 outline-none"
           >
-            <option>USD</option>
-            <option>EUR</option>
-            <option>INR</option>
+            <option value="USD">USD ($)</option>
+            <option value="INR">INR (₹)</option>
+            <option value="EUR">EUR (€)</option>
+            <option value="GBP">GBP (£)</option>
           </select>
 
           {/* Sort Dropdown */}

@@ -21,6 +21,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const unsub = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
       setLoading(false);
+
+      if (!firebaseUser) {
+        // Clear caches on logout
+        localStorage.removeItem("crypto_portfolio_cache");
+        localStorage.removeItem("crypto_prices_cache");
+      }
     });
 
     return () => unsub();

@@ -1,8 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
-    LineChart,
-    Line,
     XAxis,
     YAxis,
     Tooltip,
@@ -10,6 +8,9 @@ import {
     Area,
     AreaChart,
 } from "recharts";
+import { useCurrency, CURRENCY_SYMBOLS } from "../context/CurrencyContext";
+import NewsList from "../components/NewsList";
+
 
 function generatePriceGraph(
     currentPrice: number,
@@ -22,10 +23,10 @@ function generatePriceGraph(
     const price7dAgo = currentPrice / (1 + change7d / 100);
 
     return [
-        { time: "7d ago", price: Number(price7dAgo.toFixed(2)) },
-        { time: "24h ago", price: Number(price24hAgo.toFixed(2)) },
-        { time: "1h ago", price: Number(price1hAgo.toFixed(2)) },
-        { time: "Now", price: Number(currentPrice.toFixed(2)) },
+        { time: "7d ago", price: price7dAgo },
+        { time: "24h ago", price: price24hAgo },
+        { time: "1h ago", price: price1hAgo },
+        { time: "Now", price: currentPrice },
     ];
 }
 
@@ -49,6 +50,7 @@ export default function CoinDetails() {
     const navigate = useNavigate();
     const [coin, setCoin] = useState<CoinDetailsData | null>(null);
     const [loading, setLoading] = useState(true);
+    const { format, convert, currency } = useCurrency();
 
     useEffect(() => {
         if (!id) return;
@@ -64,6 +66,20 @@ export default function CoinDetails() {
                 setLoading(false);
             });
     }, [id]);
+
+    const graphData = useMemo(() => {
+        if (!coin) return [];
+        const baseData = generatePriceGraph(
+            coin.price,
+            coin.percent_change_1h,
+            coin.percent_change_24h,
+            coin.percent_change_7d
+        );
+        return baseData.map(d => ({
+            ...d,
+            price: convert(d.price)
+        }));
+    }, [coin, convert]);
 
     if (loading) {
         return (
@@ -93,21 +109,7 @@ export default function CoinDetails() {
         );
     }
 
-    const graphData = generatePriceGraph(
-        coin.price,
-        coin.percent_change_1h,
-        coin.percent_change_24h,
-        coin.percent_change_7d
-    );
-
     const isPositive24h = coin.percent_change_24h >= 0;
-
-    const formatNumber = (num: number) => {
-        if (num >= 1e9) return `$${(num / 1e9).toFixed(2)}B`;
-        if (num >= 1e6) return `$${(num / 1e6).toFixed(2)}M`;
-        if (num >= 1e3) return `$${(num / 1e3).toFixed(2)}K`;
-        return `$${num.toFixed(2)}`;
-    };
 
     const getChangeColor = (change: number) => {
         return change >= 0 ? "text-green-500" : "text-red-500";
@@ -118,7 +120,7 @@ export default function CoinDetails() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-indigo-50/30 to-gray-50 dark:from-gray-900 dark:via-indigo-950/30 dark:to-gray-900 text-gray-900 dark:text-gray-100">
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-indigo-50/30 to-gray-50 dark:from-gray-900 dark:via-indigo-950/30 dark:to-gray-900 text-gray-900 dark:text-gray-100 pb-12">
             {/* Back Button */}
             <div className="px-8 pt-6">
                 <button
@@ -151,7 +153,7 @@ export default function CoinDetails() {
 
                         <div className="flex items-baseline gap-4">
                             <span className="text-5xl font-bold text-white">
-                                ${coin.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                {format(coin.price)}
                             </span>
                             <span className={`text-2xl font-semibold ${isPositive24h ? 'text-green-300' : 'text-red-300'}`}>
                                 {isPositive24h ? '↗' : '↘'} {Math.abs(coin.percent_change_24h).toFixed(2)}%
@@ -173,7 +175,7 @@ export default function CoinDetails() {
                             </div>
                         </div>
                         <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                            {formatNumber(coin.market_cap)}
+                            {format(coin.market_cap)}
                         </p>
                     </div>
 
@@ -188,7 +190,7 @@ export default function CoinDetails() {
                             </div>
                         </div>
                         <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                            {formatNumber(coin.volume_24h)}
+                            {format(coin.volume_24h)}
                         </p>
                     </div>
 
@@ -255,7 +257,7 @@ export default function CoinDetails() {
                     <div className="flex items-center justify-between mb-6">
                         <div>
                             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                                Price Trend
+                                Price Trend ({currency})
                             </h2>
                             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                                 Historical price movement
@@ -280,7 +282,7 @@ export default function CoinDetails() {
                                 <YAxis
                                     stroke="#9ca3af"
                                     style={{ fontSize: '14px' }}
-                                    tickFormatter={(value) => `$${value}`}
+                                    tickFormatter={(val) => val.toLocaleString()}
                                 />
                                 <Tooltip
                                     contentStyle={{
@@ -290,7 +292,10 @@ export default function CoinDetails() {
                                         color: '#fff',
                                         padding: '12px'
                                     }}
-                                    formatter={(value: any) => [`$${value}`, 'Price']}
+                                    formatter={(value: any) => [`${CURRENCY_SYMBOLS[currency]}${value.toLocaleString()}`, 'Price']}
+                                    labelStyle={{ color: '#9ca3af' }}
+                                // Actually since graphData prices are already converted:
+                                // let's just use the value directly
                                 />
                                 <Area
                                     type="monotone"
@@ -309,12 +314,12 @@ export default function CoinDetails() {
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        Graph is derived from percentage change data and represents a trend, not exact historical prices.
+                        Graph represents a trend based on percentage changes, not exact historical data.
                     </p>
                 </div>
 
                 {/* Description */}
-                <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8 border border-gray-100 dark:border-gray-700">
+                <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8 border border-gray-100 dark:border-gray-700 mb-8">
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
                         About {coin.name}
                     </h2>
@@ -322,6 +327,8 @@ export default function CoinDetails() {
                         {coin.description}
                     </p>
                 </div>
+
+                <NewsList symbols={coin.symbol} title={`${coin.name} News`} />
             </div>
         </div>
     );
