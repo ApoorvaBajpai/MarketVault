@@ -1,34 +1,8 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useEffect, useState, useMemo } from "react";
-import {
-    XAxis,
-    YAxis,
-    Tooltip,
-    ResponsiveContainer,
-    Area,
-    AreaChart,
-} from "recharts";
-import { useCurrency, CURRENCY_SYMBOLS } from "../context/CurrencyContext";
-import NewsList from "../components/NewsList";
+import { useEffect, useState } from "react";
+import { useCurrency } from "../context/CurrencyContext";
 
 
-function generatePriceGraph(
-    currentPrice: number,
-    change1h: number,
-    change24h: number,
-    change7d: number
-) {
-    const price1hAgo = currentPrice / (1 + change1h / 100);
-    const price24hAgo = currentPrice / (1 + change24h / 100);
-    const price7dAgo = currentPrice / (1 + change7d / 100);
-
-    return [
-        { time: "7d ago", price: price7dAgo },
-        { time: "24h ago", price: price24hAgo },
-        { time: "1h ago", price: price1hAgo },
-        { time: "Now", price: currentPrice },
-    ];
-}
 
 type CoinDetailsData = {
     id: string;
@@ -44,19 +18,21 @@ type CoinDetailsData = {
     market_cap: number;
     volume_24h: number;
 };
+import { getCoinDetails } from "../api/market";
+
+// ... existing types ...
 
 export default function CoinDetails() {
     const { id } = useParams();
     const navigate = useNavigate();
     const [coin, setCoin] = useState<CoinDetailsData | null>(null);
     const [loading, setLoading] = useState(true);
-    const { format, convert, currency } = useCurrency();
+    const { format } = useCurrency();
 
     useEffect(() => {
         if (!id) return;
 
-        fetch(`http://localhost:5000/api/coins/${id}/details`)
-            .then(res => res.json())
+        getCoinDetails(id)
             .then(data => {
                 setCoin(data);
                 setLoading(false);
@@ -67,19 +43,6 @@ export default function CoinDetails() {
             });
     }, [id]);
 
-    const graphData = useMemo(() => {
-        if (!coin) return [];
-        const baseData = generatePriceGraph(
-            coin.price,
-            coin.percent_change_1h,
-            coin.percent_change_24h,
-            coin.percent_change_7d
-        );
-        return baseData.map(d => ({
-            ...d,
-            price: convert(d.price)
-        }));
-    }, [coin, convert]);
 
     if (loading) {
         return (
@@ -252,71 +215,6 @@ export default function CoinDetails() {
                     )}
                 </div>
 
-                {/* Price Chart */}
-                <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8 border border-gray-100 dark:border-gray-700 mb-8">
-                    <div className="flex items-center justify-between mb-6">
-                        <div>
-                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                                Price Trend ({currency})
-                            </h2>
-                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                Historical price movement
-                            </p>
-                        </div>
-                    </div>
-
-                    <div style={{ width: "100%", height: 400 }}>
-                        <ResponsiveContainer>
-                            <AreaChart data={graphData}>
-                                <defs>
-                                    <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
-                                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                                    </linearGradient>
-                                </defs>
-                                <XAxis
-                                    dataKey="time"
-                                    stroke="#9ca3af"
-                                    style={{ fontSize: '14px' }}
-                                />
-                                <YAxis
-                                    stroke="#9ca3af"
-                                    style={{ fontSize: '14px' }}
-                                    tickFormatter={(val) => val.toLocaleString()}
-                                />
-                                <Tooltip
-                                    contentStyle={{
-                                        backgroundColor: 'rgba(17, 24, 39, 0.9)',
-                                        border: 'none',
-                                        borderRadius: '12px',
-                                        color: '#fff',
-                                        padding: '12px'
-                                    }}
-                                    formatter={(value: any) => [`${CURRENCY_SYMBOLS[currency]}${value.toLocaleString()}`, 'Price']}
-                                    labelStyle={{ color: '#9ca3af' }}
-                                // Actually since graphData prices are already converted:
-                                // let's just use the value directly
-                                />
-                                <Area
-                                    type="monotone"
-                                    dataKey="price"
-                                    stroke="#6366f1"
-                                    strokeWidth={3}
-                                    fill="url(#colorPrice)"
-                                    dot={{ fill: '#6366f1', strokeWidth: 2, r: 5 }}
-                                    activeDot={{ r: 8 }}
-                                />
-                            </AreaChart>
-                        </ResponsiveContainer>
-                    </div>
-
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-4 flex items-center gap-2">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        Graph represents a trend based on percentage changes, not exact historical data.
-                    </p>
-                </div>
 
                 {/* Description */}
                 <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8 border border-gray-100 dark:border-gray-700 mb-8">
@@ -328,7 +226,6 @@ export default function CoinDetails() {
                     </p>
                 </div>
 
-                <NewsList symbols={coin.symbol} title={`${coin.name} News`} />
             </div>
         </div>
     );
