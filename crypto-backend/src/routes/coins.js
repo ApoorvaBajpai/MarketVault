@@ -64,7 +64,7 @@ router.get("/info/:id", async (req, res) => {
 });
 
 /* Merged API */
-router.get("/listings-with-info",  authMiddleware, async (req, res) => {
+router.get("/listings-with-info", authMiddleware, async (req, res) => {
     try {
         const filter = req.query.filter || "all";
         const sort = req.query.sort || "market_cap";
@@ -182,57 +182,143 @@ router.get("/listings-with-info",  authMiddleware, async (req, res) => {
 
 /* Coin Details API */
 router.get("/:id/details", async (req, res) => {
-  try {
-    const { id } = req.params;
+    try {
+        const { id } = req.params;
 
-    // 1️⃣ Fetch coin info
-    const infoRes = await axios.get(
-      "https://pro-api.coinmarketcap.com/v1/cryptocurrency/info",
-      {
-        headers: {
-          "X-CMC_PRO_API_KEY": process.env.CMC_API_KEY,
-          Accept: "application/json",
-        },
-        params: { id },
-      }
-    );
+        // 1️⃣ Fetch coin info
+        const infoRes = await axios.get(
+            "https://pro-api.coinmarketcap.com/v1/cryptocurrency/info",
+            {
+                headers: {
+                    "X-CMC_PRO_API_KEY": process.env.CMC_API_KEY,
+                    Accept: "application/json",
+                },
+                params: { id },
+            }
+        );
 
-    // 2️⃣ Fetch latest quotes
-    const quoteRes = await axios.get(
-      "https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest",
-      {
-        headers: {
-          "X-CMC_PRO_API_KEY": process.env.CMC_API_KEY,
-          Accept: "application/json",
-        },
-        params: { id },
-      }
-    );
+        // 2️⃣ Fetch latest quotes
+        const quoteRes = await axios.get(
+            "https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest",
+            {
+                headers: {
+                    "X-CMC_PRO_API_KEY": process.env.CMC_API_KEY,
+                    Accept: "application/json",
+                },
+                params: { id },
+            }
+        );
 
-    const info = infoRes.data.data[id];
-    const quote = quoteRes.data.data[id].quote.USD;
+        const info = infoRes.data.data[id];
+        const quote = quoteRes.data.data[id].quote.USD;
 
-    // 3️⃣ Send clean response
-    res.json({
-      id,
-      name: info.name,
-      symbol: info.symbol,
-      logo: info.logo,
-      description: info.description,
-      website: info.urls?.website?.[0] || "",
-      price: quote.price,
-      percent_change_1h: quote.percent_change_1h,
-      percent_change_24h: quote.percent_change_24h,
-      percent_change_7d: quote.percent_change_7d,
-      market_cap: quote.market_cap,
-      volume_24h: quote.volume_24h,
-    });
-  } catch (err) {
-    res.status(500).json({
-      error: "Failed to fetch coin details",
-      message: err.message,
-    });
-  }
+        // 3️⃣ Send clean response
+        res.json({
+            id,
+            name: info.name,
+            symbol: info.symbol,
+            logo: info.logo,
+            description: info.description,
+            website: info.urls?.website?.[0] || "",
+            price: quote.price,
+            percent_change_1h: quote.percent_change_1h,
+            percent_change_24h: quote.percent_change_24h,
+            percent_change_7d: quote.percent_change_7d,
+            market_cap: quote.market_cap,
+            volume_24h: quote.volume_24h,
+        });
+    } catch (err) {
+        res.status(500).json({
+            error: "Failed to fetch coin details",
+            message: err.message,
+        });
+    }
+});
+
+
+/* Chart Data API — uses CoinGecko (free, no key required) */
+const SYMBOL_TO_COINGECKO = {
+    BTC: "bitcoin", ETH: "ethereum", USDT: "tether", BNB: "binancecoin",
+    SOL: "solana", XRP: "ripple", USDC: "usd-coin", ADA: "cardano",
+    AVAX: "avalanche-2", DOGE: "dogecoin", DOT: "polkadot", TRX: "tron",
+    LINK: "chainlink", MATIC: "matic-network", TON: "the-open-network",
+    SHIB: "shiba-inu", DAI: "dai", LTC: "litecoin", BCH: "bitcoin-cash",
+    UNI: "uniswap", ATOM: "cosmos", XLM: "stellar", ETC: "ethereum-classic",
+    FIL: "filecoin", APT: "aptos", NEAR: "near", IMX: "immutable-x",
+    OP: "optimism", ARB: "arbitrum", PEPE: "pepe", MKR: "maker",
+    AAVE: "aave", GRT: "the-graph", ALGO: "algorand", ICP: "internet-computer",
+    VET: "vechain", SAND: "the-sandbox", MANA: "decentraland", XTZ: "tez",
+    SUI: "sui", SEI: "sei-network", INJ: "injective-protocol",
+    STX: "blockstack", RUNE: "thorchain", EGLD: "elrond-erd-2",
+    HBAR: "hedera-hashgraph", FTM: "fantom", THETA: "theta-token",
+    RENDER: "render-token", WLD: "worldcoin-wld",
+    LEO: "leo-token", CRO: "crypto-com-chain", OKB: "okb",
+    KAS: "kaspa", TAO: "bittensor", FET: "fetch-ai",
+};
+
+let geckoListCache = null;
+let geckoListCacheTime = 0;
+const GECKO_LIST_TTL = 24 * 60 * 60 * 1000;
+
+async function getGeckoId(symbol) {
+    const upper = symbol.toUpperCase();
+    if (SYMBOL_TO_COINGECKO[upper]) return SYMBOL_TO_COINGECKO[upper];
+    try {
+        const now = Date.now();
+        if (!geckoListCache || now - geckoListCacheTime > GECKO_LIST_TTL) {
+            const listRes = await axios.get("https://api.coingecko.com/api/v3/coins/list");
+            geckoListCache = listRes.data;
+            geckoListCacheTime = now;
+        }
+        const match = geckoListCache.find(c => c.symbol.toUpperCase() === upper);
+        return match ? match.id : null;
+    } catch {
+        return null;
+    }
+}
+
+router.get("/:id/chart", authMiddleware, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const days = req.query.days || "7";
+
+        const infoRes = await axios.get(
+            "https://pro-api.coinmarketcap.com/v1/cryptocurrency/info",
+            {
+                headers: {
+                    "X-CMC_PRO_API_KEY": process.env.CMC_API_KEY,
+                    Accept: "application/json",
+                },
+                params: { id },
+            }
+        );
+        const symbol = infoRes.data.data[id]?.symbol;
+        if (!symbol) {
+            return res.status(404).json({ error: "Coin not found" });
+        }
+
+        const geckoId = await getGeckoId(symbol);
+        if (!geckoId) {
+            return res.status(404).json({ error: `No chart data available for ${symbol}` });
+        }
+
+        const chartRes = await axios.get(
+            `https://api.coingecko.com/api/v3/coins/${geckoId}/market_chart`,
+            { params: { vs_currency: "usd", days } }
+        );
+
+        const prices = chartRes.data.prices.map(([timestamp, price]) => ({
+            time: timestamp,
+            price: parseFloat(price.toFixed(2)),
+        }));
+
+        res.json({ symbol, days, prices });
+    } catch (err) {
+        res.status(500).json({
+            error: "Failed to fetch chart data",
+            message: err.message,
+        });
+    }
 });
 
 
